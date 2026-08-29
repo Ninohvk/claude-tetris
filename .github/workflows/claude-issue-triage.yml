@@ -65,3 +65,6 @@ jobs:
             - No comentes ni modifiques otros issues ni pull requests.
             - Si el issue no tiene suficiente información para diagnosticarlo, dilo explícitamente
               en la sección "Resumen del problema" en vez de inventar contexto.
+            - El comentario debe estar escrito en formato Markdown válido, tal como lo interpreta
+              GitHub (encabezados con "##", listas con "-", bloques de código con ``` y rutas de
+              archivo entre backticks), para que se vea bien renderizado en la interfaz de GitHub.
