@@ -1,0 +1,67 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  triage:
+    if: github.event.sender.type != 'Bot'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: claude-issue-triage-${{ github.event.issue.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Issue Triage
+        id: claude-triage
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowedTools "Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh label list:*)"'
+          prompt: |
+            Estás analizando el issue #${{ github.event.issue.number }} de este repositorio.
+
+            Pasos a seguir:
+
+            1. Lee el issue completo con:
+               gh issue view ${{ github.event.issue.number }} --json title,body,labels,comments
+
+            2. Explora brevemente el código del repositorio (los archivos relevantes al tema del
+               issue) para fundamentar tu diagnóstico. No asumas la estructura del proyecto: léela.
+
+            3. Lista las labels que ya existen en el repositorio con `gh label list` y elige SOLO
+               entre esas (no crees labels nuevas). Aplica las que correspondan con:
+               gh issue edit ${{ github.event.issue.number }} --add-label "label1,label2"
+               Si el issue ya tiene labels correctas, no hace falta volver a añadirlas.
+               No quites labels que haya puesto una persona manualmente.
+
+            4. Publica un comentario de diagnóstico en español con:
+               gh issue comment ${{ github.event.issue.number }} --body "..."
+               El comentario debe tener exactamente estas tres secciones en este orden:
+
+               ## Resumen del problema
+               Una reformulación clara y breve de qué pide o reporta el issue.
+
+               ## Archivos/áreas afectadas
+               Qué archivos o partes del código probablemente hay que tocar para resolverlo,
+               basado en lo que exploraste en el paso 2.
+
+               ## Propuesta de solución
+               Un enfoque de implementación a alto nivel (no el código final), suficiente para
+               que alguien pueda empezar a programar la solución a partir de este diagnóstico.
+
+            Reglas importantes:
+            - NO edites el título ni la descripción (body) del issue. Solo puedes añadir labels
+              y publicar un comentario.
+            - No comentes ni modifiques otros issues ni pull requests.
+            - Si el issue no tiene suficiente información para diagnosticarlo, dilo explícitamente
+              en la sección "Resumen del problema" en vez de inventar contexto.
