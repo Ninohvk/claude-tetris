@@ -262,3 +262,114 @@ body.theme-pixel #board,
 body.theme-pixel #next-canvas {
   image-rendering: pixelated;
 }
+
+/* ---- Records ---- */
+.records-list {
+  list-style: decimal;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #ccc;
+}
+
+.records-list .records-empty {
+  list-style: none;
+  color: #555570;
+  padding-left: 0;
+}
+
+.records-list .record-new {
+  color: #ffd54f;
+  font-weight: 700;
+}
+
+.records-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: #888;
+}
+
+.records-stats strong {
+  color: #7aa2f7;
+}
+
+#reset-records-btn {
+  margin-top: 4px;
+  background: transparent;
+  color: #e57373;
+  border: 1px solid #4a2a2a;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: background 0.15s;
+}
+
+#reset-records-btn:hover {
+  background: rgba(229, 115, 115, 0.12);
+}
+
+#overlay-highscore-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+#overlay-highscore-form.hidden {
+  display: none;
+}
+
+.highscore-prompt {
+  font-size: 12px;
+  color: #ffd54f;
+}
+
+#name-input {
+  background: #1a1a25;
+  border: 1px solid #3a3a5a;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #e0e0e0;
+  text-align: center;
+  width: 160px;
+}
+
+#save-score-btn {
+  background: #7aa2f7;
+  color: #0f0f17;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s;
+}
+
+#save-score-btn:hover {
+  background: #9bbdff;
+}
+
+.overlay-records {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.overlay-records .label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #555570;
+  font-weight: 600;
+}
