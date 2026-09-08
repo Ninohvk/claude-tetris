@@ -15,6 +15,42 @@ const COLORS = [
   '#ffb74d', // L - orange
 ];
 
+const NEON_COLORS = [
+  null,
+  '#00e5ff', // I
+  '#fff200', // O
+  '#e040fb', // T
+  '#39ff14', // S
+  '#ff1744', // Z
+  '#448aff', // J
+  '#ff9100', // L
+];
+
+const PASTEL_COLORS = [
+  null,
+  '#b3e5fc', // I
+  '#fff9c4', // O
+  '#e1bee7', // T
+  '#c8e6c9', // S
+  '#ffcdd2', // Z
+  '#bbdefb', // J
+  '#ffe0b2', // L
+];
+
+const THEME_COLORS = {
+  retro: COLORS,
+  neon: NEON_COLORS,
+  pastel: PASTEL_COLORS,
+  pixel: COLORS,
+};
+
+let currentTheme = 'retro';
+
+function getColor(colorIndex) {
+  const palette = THEME_COLORS[currentTheme] || COLORS;
+  return palette[colorIndex];
+}
+
 const PIECES = [
   null,
   [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], // I
@@ -45,6 +81,7 @@ const pauseRestartBtn = document.getElementById('pause-restart-btn');
 const toggleControlsBtn = document.getElementById('toggle-controls-btn');
 const pauseControls = document.getElementById('pause-controls');
 const startLevelSelect = document.getElementById('start-level-select');
+const themeSelect = document.getElementById('theme-select');
 
 const START_LEVEL_KEY = 'tetris-start-level';
 
@@ -180,16 +217,98 @@ function updateHUD() {
   levelEl.textContent = level;
 }
 
+const pixelPatternCache = new WeakMap();
+
+function getPixelPattern(context, color) {
+  let colorMap = pixelPatternCache.get(context);
+  if (!colorMap) {
+    colorMap = new Map();
+    pixelPatternCache.set(context, colorMap);
+  }
+  let pattern = colorMap.get(color);
+  if (pattern) return pattern;
+
+  const tile = document.createElement('canvas');
+  tile.width = 8;
+  tile.height = 8;
+  const tctx = tile.getContext('2d');
+  tctx.fillStyle = color;
+  tctx.fillRect(0, 0, 8, 8);
+  tctx.fillStyle = 'rgba(0,0,0,0.15)';
+  tctx.fillRect(0, 0, 4, 4);
+  tctx.fillRect(4, 4, 4, 4);
+
+  pattern = context.createPattern(tile, 'repeat');
+  colorMap.set(color, pattern);
+  return pattern;
+}
+
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const color = COLORS[colorIndex];
+  const color = getColor(colorIndex);
   context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+
+  const bx = x * size + 1;
+  const by = y * size + 1;
+  const bw = size - 2;
+  const bh = size - 2;
+
+  if (currentTheme === 'neon') {
+    context.shadowColor = color;
+    context.shadowBlur = 12;
+    context.fillStyle = color;
+    context.fillRect(bx, by, bw, bh);
+    context.shadowBlur = 0;
+    context.fillStyle = 'rgba(255,255,255,0.25)';
+    context.fillRect(bx, by, bw, 4);
+  } else if (currentTheme === 'pastel') {
+    const radius = Math.min(6, bw / 2, bh / 2);
+    context.fillStyle = color;
+    context.beginPath();
+    if (typeof context.roundRect === 'function') {
+      context.roundRect(bx, by, bw, bh, radius);
+    } else {
+      context.moveTo(bx + radius, by);
+      context.arcTo(bx + bw, by, bx + bw, by + bh, radius);
+      context.arcTo(bx + bw, by + bh, bx, by + bh, radius);
+      context.arcTo(bx, by + bh, bx, by, radius);
+      context.arcTo(bx, by, bx + bw, by, radius);
+      context.closePath();
+    }
+    context.fill();
+    context.fillStyle = 'rgba(255,255,255,0.3)';
+    context.fillRect(bx, by, bw, 4);
+  } else if (currentTheme === 'pixel') {
+    context.fillStyle = getPixelPattern(context, color);
+    context.fillRect(bx, by, bw, bh);
+    context.fillStyle = 'rgba(255,255,255,0.12)';
+    context.fillRect(bx, by, bw, 4);
+  } else {
+    // retro
+    context.fillStyle = color;
+    context.fillRect(bx, by, bw, bh);
+    context.fillStyle = 'rgba(255,255,255,0.12)';
+    context.fillRect(bx, by, bw, 4);
+  }
+
   context.globalAlpha = 1;
+}
+
+function applyTheme(theme) {
+  if (!THEME_COLORS[theme]) theme = 'retro';
+  currentTheme = theme;
+  try {
+    localStorage.setItem('tetris-theme', theme);
+  } catch (e) {
+    // localStorage unavailable (private browsing, sandboxed origin, etc.) — ignore.
+  }
+  document.body.classList.remove('theme-retro', 'theme-neon', 'theme-pastel', 'theme-pixel');
+  document.body.classList.add(`theme-${theme}`);
+  if (themeSelect) themeSelect.value = theme;
+  if (board && current) {
+    draw();
+    drawNext();
+  }
 }
 
 function drawGrid() {
@@ -301,6 +420,8 @@ function init() {
 }
 
 document.addEventListener('keydown', e => {
+  const tag = e.target && e.target.tagName;
+  if (tag === 'SELECT' || tag === 'INPUT' || tag === 'TEXTAREA') return;
   if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
@@ -344,5 +465,17 @@ startLevelSelect.addEventListener('change', () => {
     // localStorage may be unavailable; the choice just won't persist.
   }
 });
+
+if (themeSelect) {
+  themeSelect.addEventListener('change', e => applyTheme(e.target.value));
+}
+
+let savedTheme = 'retro';
+try {
+  savedTheme = localStorage.getItem('tetris-theme') || 'retro';
+} catch (e) {
+  // localStorage unavailable (private browsing, sandboxed origin, etc.) — fall back to default.
+}
+applyTheme(savedTheme);
 
 init();
